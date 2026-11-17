@@ -54,11 +54,26 @@ npm publish --dry-run            # shows exactly which files ship
 npm publish --access public
 ```
 
+Order matters: the npm installer downloads
+`https://github.com/the-golden-army/Rusturbo/releases/download/v<version>/rusturbo-<target>`,
+so the GitHub Release must exist **before** the npm package is useful. Asset names carry no
+version, only the tag does — the installer resolves them from `package.json`.
+
 Then confirm the binary resolution works against the new tag:
 
 ```bash
 npx rusturbo@<version> --version
 ```
+
+Offline/mirror testing without waiting for the release:
+
+```bash
+RUSTURBO_BINARY_PATH=./rusturbo-x86_64-unknown-linux-gnu node install.js
+RUSTURBO_BINARY_URL=https://internal.example/rusturbo node install.js
+```
+
+Note on `postinstall`: it always exits 0 so a failed binary fetch can never break a
+consumer's `npm install`. The shim reports the problem at run time instead.
 
 If the release assets are not up yet, `postinstall` falls back to a source build, so wait
 for the GitHub Release to finish before smoke-testing npm.
