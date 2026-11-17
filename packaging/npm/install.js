@@ -87,7 +87,7 @@ async function main() {
     try {
       execFileSync(
         "cargo",
-        ["install", "--git", `https://github.com/${REPO}`, "--tag", `v${VERSION}`, "--locked"],
+        ["install", "--git", `https://github.com/${REPO}`, "--tag", `v${VERSION}`],
         { stdio: "inherit" }
       );
       console.log("rusturbo: installed from source");
