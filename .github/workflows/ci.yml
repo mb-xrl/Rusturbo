@@ -33,6 +33,22 @@ jobs:
         shell: bash
         run: cargo check --all-targets --message-format=short 2>&1 | tee check.log
 
+      # A binary crate should ship a Cargo.lock so release builds are reproducible and
+      # `--locked` works. The sandbox this repo was bootstrapped in had no Rust
+      # toolchain, so the lockfile is generated once here and committed back.
+      - name: Ensure Cargo.lock is committed
+        if: matrix.os == 'ubuntu-latest' && github.event_name == 'push'
+        shell: bash
+        run: |
+          cargo generate-lockfile
+          if [ -n "$(git status --porcelain Cargo.lock)" ]; then
+            git config user.name "rusturbo-ci"
+            git config user.email "ci@rusturbo.local"
+            git add Cargo.lock
+            git commit -m "chore: add Cargo.lock [skip ci]"
+            git push
+          fi
+
       - name: Tests
         shell: bash
         run: cargo test --all-targets 2>&1 | tee test.log
