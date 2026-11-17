@@ -64,6 +64,10 @@ function download(url, dest, redirects = 0) {
   });
 }
 
+// Escape hatches, in order of precedence:
+//   RUSTURBO_BINARY_PATH  — use an already-downloaded binary (air-gapped installs, CI)
+//   RUSTURBO_BINARY_URL   — fetch from an internal mirror instead of GitHub
+//   RUSTURBO_SKIP_DOWNLOAD=1 — install the shim only
 async function main() {
   const triple = target();
   const asset = assetName(triple);
@@ -74,10 +78,24 @@ async function main() {
     console.log("rusturbo: binary already present, skipping download");
     return;
   }
+  if (process.env.RUSTURBO_SKIP_DOWNLOAD === "1") {
+    console.log("rusturbo: RUSTURBO_SKIP_DOWNLOAD=1, install the binary yourself");
+    return;
+  }
 
-  // 1) Asset attached to the versioned GitHub Release.
-  const releaseUrl = `https://github.com/${REPO}/releases/download/v${VERSION}/${asset}`;
   fs.mkdirSync(binDir, { recursive: true });
+
+  if (process.env.RUSTURBO_BINARY_PATH) {
+    fs.copyFileSync(process.env.RUSTURBO_BINARY_PATH, binary);
+    if (process.platform !== "win32") fs.chmodSync(binary, 0o755);
+    console.log(`rusturbo: installed from RUSTURBO_BINARY_PATH`);
+    return;
+  }
+
+  // 1) Asset attached to the versioned GitHub Release (or a mirror).
+  const releaseUrl =
+    process.env.RUSTURBO_BINARY_URL ||
+    `https://github.com/${REPO}/releases/download/v${VERSION}/${asset}`;
   try {
     await download(releaseUrl, binary);
     console.log(`rusturbo: downloaded ${releaseUrl}`);
